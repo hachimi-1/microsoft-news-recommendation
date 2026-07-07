@@ -78,10 +78,15 @@ $$u_{mean} = \frac{1}{T}\sum_{i=1}^{T} v_i \tag{1}$$
 
 然后把这个整体兴趣向量和目标候选新闻向量拼在一起，得到输入特征向量 $x \in \mathbb{R}^{768}$：
 
-$$x = [u_{mean}^\top, v_{target}^\top]^\top \tag{2}$$
+$$
+x = [u_{mean}^{\top}, v_{target}^{\top}]^{\top}
+$$
+<p align="right">(2)</p>
 
 #### 3.1.2 GBDT 特征变换与逻辑回归预测
 把 $x$ 塞进一个有 $M$ 棵决策树的 GBDT 模型。假设第 $m$ 棵树有 $L_m$ 个叶子节点。输入 $x$ 沿着决策树的分支往下走，最终在每棵树里只会落进一个叶子节点。
+
+```
 
 ```text
   输入特征      GBDT 模型      独热编      逻辑回
@@ -96,9 +101,12 @@ $$x = [u_{mean}^\top, v_{target}^\top]^\top \tag{2}$$
 
 最后把这个新特征 $\phi(x)$ 扔进逻辑回归分类器，用 Sigmoid 函数算出用户点击这条新闻的概率 $\hat{y}$：
 
-$$\hat{y} = P(y = 1|x) = \sigma\left(w^\top \phi(x) + b\right) = \frac{1}{1 + e^{-(w^\top \phi(x)+b)}} \tag{3}$$
+$$
+\hat{y} = P(y = 1 \mid x) = \sigma \left( w^{\top} \phi(x) + b \right) = \frac{1}{1 + e^{-\left(w^{\top} \phi(x) + b\right)}}
+$$
+<p align="right">(3)</p>
 
-这里 $w$ 是权重向量， $b$ 是偏置。这个模型算起来非常快，工业上很稳健。
+这里 $w$ 是权重向量，$b$ 是偏置。这个模型算起来非常快，工业上很稳健。
 
 ### 3.2 深度学习模型：深度兴趣网络（DIN）架构
 
@@ -110,7 +118,10 @@ $$\hat{y} = P(y = 1|x) = \sigma\left(w^\top \phi(x) + b\right) = \frac{1}{1 + e^
 
 DIN 的核心是局部激活单元。给定一个候选新闻 $v_{target}$，模型会动态算一下历史序列里第 $i$ 条新闻 $v_i$ 对当前候选有多重要，权重 $\alpha_i$ 是这样来的：
 
-$$\alpha_i = g(v_i, v_{target}) \tag{4}$$
+$$
+\alpha_{i} = g(v_{i}, v_{target})
+$$
+<p align="right">(4)</p>
 
 这里的 $g(\cdot)$ 是个小型的多层感知机（MLP），它的输入不光有 $v_i$ 和 $v_{target}$，还有两者的外积差值之类的交互特征，用来模拟高维非凸空间里的多重相关性。
 
@@ -126,7 +137,10 @@ $$\alpha_i = g(v_i, v_{target}) \tag{4}$$
 
 通过这种自适应激活，用户的兴趣表达向量 $u_{din}$ 被重构成历史行为序列的加权条件期望：
 
-$$u_{din} = \sum_{i=1}^{T} \alpha_i v_i \tag{5}$$
+$$
+u_{din} = \sum_{i=1}^{T} \alpha_{i} v_{i}
+$$
+<p align="right">(5)</p>
 
 需要特别说一下，这个激活机制没有强制对 $\alpha_i$ 做归一化（也就是不要求 $\sum \alpha_i = 1$）。这样做的好处是保留了用户历史行为强度的绝对值：一个点过 10 次科技新闻的人，他的激活强度之和会比只点过 1 次的人大很多。
 
@@ -136,7 +150,10 @@ $$u_{din} = \sum_{i=1}^{T} \alpha_i v_i \tag{5}$$
 
 最终输出还是用 Sigmoid 映射成点击概率 $\hat{y}_{din}$。训练用的损失函数是二分类交叉熵，通过反向传播更新梯度：
 
-$$L = - \frac{1}{N} \sum_{j=1}^{N} \left[y_j \log(\hat{y}_j) + (1 - y_j) \log(1 - \hat{y}_j)\right] \tag{6}$$
+$$
+L = - \frac{1}{N} \sum_{j=1}^{N} \left[ y_{j} \log(\hat{y}_{j}) + (1 - y_{j}) \log(1 - \hat{y}_{j}) \right]
+$$
+<p align="right">(6)</p>
 
 这里 $N$ 是训练样本总数，$y_j \in \{0, 1\}$ 是真实标签。因为保留了完整的行为矩阵，DIN 能很好地捕捉用户长期的具体偏好，但这也会导致后面要说到的内存消耗问题。
 
